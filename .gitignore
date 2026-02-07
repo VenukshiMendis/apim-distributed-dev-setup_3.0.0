@@ -1,0 +1,7 @@
+# Ignore distributed component packs
+components/*
+!components/
+
+# Ignore logs
+logs/*
+!logs/
