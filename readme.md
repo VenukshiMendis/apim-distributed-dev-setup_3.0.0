@@ -103,6 +103,6 @@ Stop all profiles and stop/remove Docker containers + volumes (clean slate):
 | Component         | URL                           |
 |------------------|-------------------------------|
 | Carbon Portal  | https://localhost:9443/carbon |
-| Admin Portal      | https://localhost:9443/admin |
+| Admin Portal      | https://localhost:9445/admin |
 | Publisher        | https://localhost:9445/publisher |
 | Developer Portal         | https://localhost:9447/devportal |
