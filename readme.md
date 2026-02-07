@@ -9,7 +9,6 @@ Components included:
 - Developer Portal
 - Gateway
 
----
 
 ## Prerequisites
 
@@ -17,7 +16,6 @@ Components included:
 - **Docker** (for MySQL)
 - **Java** (compatible with APIM 3.0.0)
 
----
 
 ## Repository Structure
 
@@ -32,8 +30,6 @@ After setup, prepared components will be created under:
 Logs will be written under:
 
 - `./logs/`
-
----
 
 ## Scripts
 
@@ -81,8 +77,9 @@ Stop all profiles and stop/remove Docker containers + volumes (clean slate):
 ```bash
 ./stop.sh --clean
 ``` 
+---
 
-## Component Ports
+### Component Ports
 
 | Component         | Profile           | Port Offset | HTTPS Port (Servlet) | Other Ports     |
 |------------------|-------------------|------------:|----------------------:|-----------------|
@@ -93,7 +90,7 @@ Stop all profiles and stop/remove Docker containers + volumes (clean slate):
 | Developer Portal | api-devportal     | 4           | 9447                  | -               |
 
 
-## Access URLs 
+### Access URLs 
 
 | Component         | URL                           |
 |------------------|-------------------------------|
