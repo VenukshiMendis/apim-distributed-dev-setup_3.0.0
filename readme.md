@@ -41,18 +41,26 @@ Prepare component packs and start MySQL.
 ```bash
 ./setup.sh seed /path/to/updated/wso2am-3.0.0
 ``` 
-**Skip DB seeding + setup components**
+**Skip DB seeding + setup components** 
+
+Use this option if the database is already populated and you want to skip the database seeding step.
 ```bash
 ./setup.sh skip /path/to/updated/wso2am-3.0.0
 ```
 
 ### 2) Start profiles (sequential)
 
-Start all profiles one-by-one in the correct order:
+
+You can start the servers using **either** the script **or** the manual commands below.
+
+#### Option A: Start using the script (recommended)
+Starts all profiles **one-by-one** in the correct order:
 ```bash
 ./start.sh
 ```
-Manual startup order (if starting by hand from each component’s bin/ directory)
+#### Option B: Start manually 
+
+If you prefer to start each component yourself, go into each component’s bin/ directory and run the following in **order**
 
 ```bash
 sh wso2server.sh -Dprofile=api-key-manager
