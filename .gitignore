@@ -1,7 +1,9 @@
-# Ignore distributed component packs
-components/*
-!components/
+# Ignore everything under components/, but keep the folder + .gitkeep
+/components/**
+!/components/
+!/components/.gitkeep
 
-# Ignore logs
-logs/*
-!logs/
+# Ignore everything under logs/, but keep the folder + .gitkeep
+/logs/**
+!/logs/
+!/logs/.gitkeep
