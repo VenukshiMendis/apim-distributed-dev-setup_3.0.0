@@ -27,7 +27,7 @@ set -euo pipefail
 #   ./start.sh
 #
 # Optional env overrides:
-#   START_TIMEOUT=60         # seconds to wait per component (default 60)
+#   START_TIMEOUT=120         # seconds to wait per component (default 120)
 #   SLEEP_BETWEEN_CHECKS=2   # seconds between probes
 # ---------------------------------------------------------------------------
 
@@ -36,7 +36,7 @@ COMPONENTS_DIR="$SCRIPT_DIR/components"
 LOG_DIR="$SCRIPT_DIR/logs"
 mkdir -p "$LOG_DIR"
 
-START_TIMEOUT="${START_TIMEOUT:-60}"
+START_TIMEOUT="${START_TIMEOUT:-120}"
 SLEEP_BETWEEN_CHECKS="${SLEEP_BETWEEN_CHECKS:-2}"
 
 print_title() {
@@ -134,14 +134,12 @@ start_component() {
     echo "PID  : $pid"
 
     if ! kill -0 "$pid" 2>/dev/null; then
-      echo "---- last 200 lines of log: $log_file ----"
-      tail -n 200 "$log_file" || true
+      echo "---- Failed to start $name (process exited immediately). Check the log file: $log_file ----"
       die "$name failed to start (process exited immediately)."
     fi
 
     if ! wait_for_up "$name" "$port" "$START_TIMEOUT"; then
-      echo "---- timeout waiting for $name. last 200 lines of log: $log_file ----"
-      tail -n 200 "$log_file" || true
+      echo "---- Timeout waiting for $name. Check the log file:: $log_file ----"
       die "Timed out waiting for $name to start on port $port"
     fi
 
@@ -152,7 +150,7 @@ start_component() {
 main() {
   [ -d "$COMPONENTS_DIR" ] || die "components dir not found: $COMPONENTS_DIR"
 
-  print_title "Sequential start (your requested order)"
+  print_title "Sequential start"
   echo "  1) api-key-manager   (9444)"
   echo "  2) traffic-manager   (9443)"
   echo "  3) api-publisher     (9445)"

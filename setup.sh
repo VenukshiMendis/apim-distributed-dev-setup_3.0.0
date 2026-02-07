@@ -105,40 +105,15 @@ profile_for() {
   esac
 }
 
-# ---------------------------------------------------------------------------
-# 0) Start docker-compose + wait for MySQL to be ready
-# ---------------------------------------------------------------------------
-print_title "Starting docker containers"
-docker-compose up -d
-
-print_title "Waiting for mysql to start"
-docker-compose exec mysql mysqladmin --silent --wait=60 -uroot -proot -h127.0.0.1 ping >/dev/null 2>&1 || {
-  die "mysql did not start within the expected time"
-}
-
-sleep 5
-
-# ---------------------------------------------------------------------------
-# Optional: seed databases
-# ---------------------------------------------------------------------------
-if [ "$SEED" = "seed" ]; then
-  print_title "Seeding database"
-
-  docker-compose exec mysql mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" -h127.0.0.1 \
-    -e "USE $WSO2AM_SHARED_DB; source /home/dbScripts/mysql.sql" || die "Failed seeding $WSO2AM_SHARED_DB"
-
-  sleep 3
-
-  docker-compose exec mysql mysql -u"$MYSQL_USER" -p"$MYSQL_PASSWORD" -h127.0.0.1 \
-    -e "USE $WSO2AM_DB; source /home/dbScripts/apimgt/mysql.sql" || die "Failed seeding $WSO2AM_DB"
-else
-  print_title "Skipping DB seeding (SEED=$SEED)"
-fi
 
 # ---------------------------------------------------------------------------
 # 1) Delete existing component folders (if any)
 # ---------------------------------------------------------------------------
 print_title "1) Deleting existing component folders (if any)"
+
+# Remove Finder metadata files (hidden junk) that can keep directories non-empty
+find "$COMPONENTS_DIR" -name ".DS_Store" -delete 2>/dev/null || true
+
 for name in $COMPONENTS; do
   target="$COMPONENTS_DIR/$name"
   if [ -d "$target" ]; then
@@ -174,7 +149,43 @@ print_title "Cleaning up base copied folder"
 rm -rf "$BASE_DST" || true
 
 # ---------------------------------------------------------------------------
-# 4) Run profileSetup.sh + copy MySQL connector jar
+# 4) Start docker-compose + wait for MySQL to be ready
+# ---------------------------------------------------------------------------
+print_title "Starting docker containers"
+docker-compose up -d
+
+echo "Waiting for mysql to start..."
+docker-compose exec mysql mysqladmin --silent --wait=60 -uroot -proot -h127.0.0.1 ping
+if [ $? -ne 0 ]; then
+    echo "Error: mysql did not start within the expected time"
+    exit $?
+fi
+
+sleep 10
+
+# ---------------------------------------------------------------------------
+# Optional: seed databases
+# ---------------------------------------------------------------------------
+if [ "$SEED" = "seed" ]; then
+  echo "Seeding $WSO2AM_DB..."
+  docker-compose exec -T mysql sh -lc \
+    'mysql -u"'"$MYSQL_USER"'" -p"'"$MYSQL_PASSWORD"'" -h127.0.0.1 "'"$WSO2AM_DB"'" < /home/dbScripts/apimgt/mysql.sql' \
+    || die "Failed seeding $WSO2AM_DB"
+  sleep 10
+
+  echo "Seeding $WSO2AM_SHARED_DB..."
+  docker-compose exec -T mysql sh -lc \
+    'mysql -u"'"$MYSQL_USER"'" -p"'"$MYSQL_PASSWORD"'" -h127.0.0.1 "'"$WSO2AM_SHARED_DB"'" < /home/dbScripts/mysql.sql' \
+    || die "Failed seeding $WSO2AM_SHARED_DB"
+  sleep 10
+
+
+else
+  print_title "Skipping DB seeding (SEED=$SEED)"
+fi
+
+# ---------------------------------------------------------------------------
+# 5) Run profileSetup.sh + copy MySQL connector jar
 # ---------------------------------------------------------------------------
 print_title "4) Running profileSetup.sh + copying MySQL connector jar for each component"
 
@@ -200,7 +211,7 @@ for name in $COMPONENTS; do
 done
 
 # ---------------------------------------------------------------------------
-# 5) Merge overlay conf into repository (no deletes)
+# 6) Merge overlay conf into repository (no deletes)
 # ---------------------------------------------------------------------------
 print_title "5) Merging ./conf/<component>/repository/* into each component's repository/ (no deletes)"
 
