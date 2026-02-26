@@ -3,12 +3,10 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 # Script: start.sh
 #
-# Starts WSO2 AM 3.0.0 distributed components sequentially in this order:
-#   1) api-key-manager
-#   2) traffic-manager
-#   3) api-publisher
-#   4) api-devportal
-#   5) gateway-worker
+# Starts WSO2 APIM distributed components sequentially (3 services):
+#   1) control_plane    (profile=control-plane)
+#   2) traffic_manager  (profile=traffic-manager)
+#   3) gateway          (profile=gateway-worker)
 #
 # Wait logic:
 #   - Probes https://localhost:<port>/carbon/ until it responds
@@ -27,8 +25,8 @@ set -euo pipefail
 #   ./start.sh
 #
 # Optional env overrides:
-#   START_TIMEOUT=120         # seconds to wait per component (default 120)
-#   SLEEP_BETWEEN_CHECKS=2   # seconds between probes
+#   START_TIMEOUT=180         # seconds to wait per component (default 180)
+#   SLEEP_BETWEEN_CHECKS=2    # seconds between probes
 # ---------------------------------------------------------------------------
 
 SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
@@ -36,7 +34,7 @@ COMPONENTS_DIR="$SCRIPT_DIR/components"
 LOG_DIR="$SCRIPT_DIR/logs"
 mkdir -p "$LOG_DIR"
 
-START_TIMEOUT="${START_TIMEOUT:-120}"
+START_TIMEOUT="${START_TIMEOUT:-180}"
 SLEEP_BETWEEN_CHECKS="${SLEEP_BETWEEN_CHECKS:-2}"
 
 print_title() {
@@ -48,34 +46,29 @@ print_title() {
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
-# Start order you requested
-COMPONENTS=("key_manager" "traffic_manager" "publisher" "devportal" "gateway")
+# Start order (3 services)
+COMPONENTS=("control_plane" "traffic_manager" "gateway")
 
 profile_for() {
   case "$1" in
-    key_manager)      echo "api-key-manager" ;;
+    control_plane)    echo "control-plane" ;;
     traffic_manager)  echo "traffic-manager" ;;
-    publisher)        echo "api-publisher" ;;
-    devportal)        echo "api-devportal" ;;
     gateway)          echo "gateway-worker" ;;
     *) return 1 ;;
   esac
 }
 
-# HTTPS ports from your offsets table
+# HTTPS ports (UPDATE THESE TO MATCH YOUR OFFSETS)
 https_port_for() {
   case "$1" in
-    traffic_manager)  echo "9443" ;;
-    key_manager)      echo "9444" ;;
-    publisher)        echo "9445" ;;
-    gateway)          echo "9446" ;;
-    devportal)        echo "9447" ;;
+    control_plane)    echo "9443" ;;
+    traffic_manager)  echo "9444" ;;
+    gateway)          echo "9445" ;;
     *) return 1 ;;
   esac
 }
 
 # Probe "up" via HTTPS /carbon/
-# Prints meaningful retry counter line (no curl spam).
 wait_for_up() {
   local service_name="$1"
   local port="$2"
@@ -112,34 +105,32 @@ start_component() {
 
   comp_home="$COMPONENTS_DIR/$name"
   [ -d "$comp_home" ] || die "Component folder not found: $comp_home"
-  [ -f "$comp_home/bin/wso2server.sh" ] || die "wso2server.sh not found: $comp_home/bin/wso2server.sh"
+  [ -f "$comp_home/bin/api-manager.sh" ] || die "api-manager.sh not found: $comp_home/bin/api-manager.sh"
 
   log_file="$LOG_DIR/${name}.log"
 
-  print_title "Starting ${name} -> sh wso2server.sh -Dprofile=${profile} (HTTPS=${port})"
+  print_title "Starting ${name} -> sh api-manager.sh -Dprofile=${profile} (HTTPS=${port})"
   echo "Home : $comp_home"
   echo "Log  : $log_file (overwrite)"
 
-  # Overwrite the log at each run (no append)
   : > "$log_file"
 
   (
     cd "$comp_home/bin"
-    # Redirect output to log (overwrite is handled above). nohup keeps it running if terminal closes.
-    nohup sh wso2server.sh "-Dprofile=${profile}" </dev/null >>"$log_file" 2>&1 &
-    echo $!  # print PID to subshell stdout
+    nohup sh api-manager.sh "-Dprofile=${profile}" </dev/null >>"$log_file" 2>&1 &
+    echo $!
   ) | {
     read -r pid
     [ -n "$pid" ] || die "Failed to capture PID for $name"
     echo "PID  : $pid"
 
     if ! kill -0 "$pid" 2>/dev/null; then
-      echo "---- Failed to start $name (process exited immediately). Check the log file: $log_file ----"
+      echo "---- Failed to start $name (process exited immediately). Check: $log_file ----"
       die "$name failed to start (process exited immediately)."
     fi
 
     if ! wait_for_up "$name" "$port" "$START_TIMEOUT"; then
-      echo "---- Timeout waiting for $name. Check the log file:: $log_file ----"
+      echo "---- Timeout waiting for $name. Check: $log_file ----"
       die "Timed out waiting for $name to start on port $port"
     fi
 
@@ -150,12 +141,10 @@ start_component() {
 main() {
   [ -d "$COMPONENTS_DIR" ] || die "components dir not found: $COMPONENTS_DIR"
 
-  print_title "Sequential start"
-  echo "  1) api-key-manager   (9444)"
-  echo "  2) traffic-manager   (9443)"
-  echo "  3) api-publisher     (9445)"
-  echo "  4) api-devportal     (9447)"
-  echo "  5) gateway-worker    (9446)"
+  print_title "Sequential start (3 services)"
+  echo "  1) control_plane    (HTTPS=$(https_port_for control_plane))"
+  echo "  2) traffic_manager  (HTTPS=$(https_port_for traffic_manager))"
+  echo "  3) gateway-worker   (HTTPS=$(https_port_for gateway))"
   echo
   echo "Timeout per component: ${START_TIMEOUT}s"
   echo "Probe interval        : ${SLEEP_BETWEEN_CHECKS}s"

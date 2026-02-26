@@ -7,3 +7,8 @@
 /logs/**
 !/logs/
 !/logs/.gitkeep
+
+
+.idea
+.DS_Store
+conf/.DS_Store

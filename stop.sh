@@ -19,7 +19,7 @@ set -euo pipefail
 #       * Removes docker containers/volumes (clean slate)
 #
 # Notes:
-#   - Uses each component's bin/wso2server.sh stop to shutdown gracefully.
+#   - Uses each component's bin/api-manager.sh stop to shutdown gracefully.
 #   - If a graceful stop fails, it will try to kill leftover java processes
 #     belonging to that component home (based on process command line).
 # ---------------------------------------------------------------------------
@@ -42,7 +42,7 @@ print_title() {
 die() { echo "ERROR: $*" >&2; exit 1; }
 
 # Components we manage
-COMPONENTS=("key_manager" "traffic_manager" "publisher" "devportal" "gateway")
+COMPONENTS=("traffic_manager" "control_plane" "gateway")
 
 stop_one() {
   local name="$1"
@@ -54,8 +54,8 @@ stop_one() {
     return 0
   fi
 
-  if [ ! -f "$bin_dir/wso2server.sh" ]; then
-    echo "wso2server.sh not found (skip): $bin_dir/wso2server.sh"
+  if [ ! -f "$bin_dir/api-manager.sh" ]; then
+    echo "api-manager.sh not found (skip): $bin_dir/api-manager.sh"
     return 0
   fi
 
@@ -63,7 +63,7 @@ stop_one() {
   (
     cd "$bin_dir"
     # Graceful stop (best effort)
-    sh wso2server.sh stop >/dev/null 2>&1 || true
+    sh api-manager.sh stop >/dev/null 2>&1 || true
   )
 
   # Give it a moment

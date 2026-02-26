@@ -63,11 +63,9 @@ Starts all profiles **one-by-one** in the correct order:
 If you prefer to start each component yourself, go into each component’s bin/ directory and run the following in **order**
 
 ```bash
-sh wso2server.sh -Dprofile=api-key-manager
-sh wso2server.sh -Dprofile=traffic-manager
-sh wso2server.sh -Dprofile=api-publisher
-sh wso2server.sh -Dprofile=api-devportal
 sh wso2server.sh -Dprofile=gateway-worker
+sh api-manager.sh -Dprofile=control-plane
+sh api-manager.sh -Dprofile=traffic-manager
 ```
 
 Note: Wait until each server fully starts before starting the next one.

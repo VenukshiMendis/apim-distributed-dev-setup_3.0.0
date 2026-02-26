@@ -91,14 +91,12 @@ BASE_NAME="$(basename "$UPDATED_PACK_SRC")"
 BASE_DST="$COMPONENTS_DIR/$BASE_NAME"
 
 # Component list
-COMPONENTS="key_manager publisher devportal traffic_manager gateway"
+COMPONENTS="control_plane traffic_manager gateway"
 
 # Map component name -> WSO2 profile
 profile_for() {
   case "$1" in
-    key_manager)      echo "api-key-manager" ;;
-    publisher)        echo "api-publisher" ;;
-    devportal)        echo "api-devportal" ;;
+    control_plane)    echo "control-plane" ;;
     traffic_manager)  echo "traffic-manager" ;;
     gateway)          echo "gateway-worker" ;;
     *) return 1 ;;
@@ -136,9 +134,9 @@ echo "Copying: $UPDATED_PACK_SRC -> $BASE_DST"
 cp -a "$UPDATED_PACK_SRC" "$BASE_DST"
 
 # ---------------------------------------------------------------------------
-# 3) Create 5 copies (one per component)
+# 3) Create 3 copies (one per component)
 # ---------------------------------------------------------------------------
-print_title "3) Creating 5 copies and renaming"
+print_title "3) Creating 3 copies and renaming"
 for name in $COMPONENTS; do
   dst="$COMPONENTS_DIR/$name"
   echo "Creating: $dst"
